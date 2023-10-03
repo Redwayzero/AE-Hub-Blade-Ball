@@ -1,0 +1,155 @@
+-- Load the loadstring at the start of the script
+getgenv().visualizer = true
+loadstring(game:HttpGet("https://raw.githubusercontent.com/1f0yt/community/main/RedCircleBlock"))()
+
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+
+local isDragging = false
+local lastPosition = UDim2.new(0, 0, 0, 0)
+
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+screenGui.Enabled = true
+screenGui.ResetOnSpawn = false -- Set ResetOnSpawn to false
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Parent = screenGui
+mainFrame.Size = UDim2.new(0, 200, 0, 150) -- Adjust size as needed
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -75) -- Adjust position as needed
+mainFrame.BackgroundColor3 = Color3.new(0.2, 0.2, 0.2) -- Change the background color
+
+-- Make the mainFrame draggable using the example you provided
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
+
+-- Create the bar for minimizeButton and "X" button with a label
+local buttonBar = Instance.new("Frame")
+buttonBar.Parent = mainFrame
+buttonBar.Size = UDim2.new(1, 0, 0, 30)
+buttonBar.Position = UDim2.new(0, 0, 0, 0)
+buttonBar.BackgroundColor3 = Color3.new(0.1, 0.1, 0.1) -- Change the background color
+
+local barLabel = Instance.new("TextLabel") -- Add a label to the bar
+barLabel.Parent = buttonBar
+barLabel.Size = UDim2.new(1, 0, 1, 0)
+barLabel.Text = "AE Hub" -- Text for the label
+barLabel.Font = Enum.Font.SourceSansBold
+barLabel.TextSize = 20
+barLabel.TextColor3 = Color3.new(1, 1, 1) -- Text color
+barLabel.BackgroundTransparency = 1
+
+local destroyButton = Instance.new("TextButton")
+destroyButton.Parent = buttonBar
+destroyButton.Size = UDim2.new(0, 20, 0, 20)
+destroyButton.Position = UDim2.new(1, -30, 0, 5)
+destroyButton.Text = "X"
+destroyButton.BackgroundColor3 = Color3.new(1, 0, 0)
+
+local minimizeButton = Instance.new("TextButton")
+minimizeButton.Parent = buttonBar
+minimizeButton.Size = UDim2.new(0, 20, 0, 20)
+minimizeButton.Position = UDim2.new(1, -55, 0, 5)
+minimizeButton.Text = "_"
+minimizeButton.BackgroundColor3 = Color3.new(0.2, 0.2, 0.8)
+
+local mainButton = Instance.new("TextButton")
+mainButton.Parent = mainFrame
+mainButton.Size = UDim2.new(0, 200, 0, 120) -- Adjust size as needed
+mainButton.Position = UDim2.new(0, 0, 0, 30)
+mainButton.Text = "Close AutoParry: OFF"
+mainButton.BackgroundColor3 = Color3.new(0.8, 0.2, 0.2)
+
+local isMinimized = false
+
+local elementsToExclude = {buttonBar, minimizeButton, destroyButton}
+
+local function toggleVisibility(isVisible)
+    for _, element in pairs(mainFrame:GetChildren()) do
+        if element:IsA("GuiObject") and not table.find(elementsToExclude, element) then
+            element.Visible = isVisible
+        end
+    end
+end
+
+minimizeButton.MouseButton1Click:Connect(function()
+    isMinimized = not isMinimized
+    toggleVisibility(not isMinimized)
+    if isMinimized then
+        mainFrame.Size = UDim2.new(0, 200, 0, 30)
+    else
+        mainFrame.Size = UDim2.new(0, 200, 0, 150)
+    end
+end)
+
+local isAutoParryEnabled = false
+
+local function pressXKey()
+    local inputObject = Instance.new("InputObject", game)
+    inputObject.UserInputType = Enum.UserInputType.Keyboard
+    inputObject.KeyCode = Enum.KeyCode.X
+
+    UserInputService.InputBegan:Fire(inputObject)
+end
+
+UserInputService.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = true
+        lastPosition = mainFrame.Position - UDim2.new(0, input.Position.X, 0, input.Position.Y)
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if isDragging then
+        mainFrame.Position = UDim2.new(0, input.Position.X + lastPosition.X.Offset, 0, input.Position.Y + lastPosition.Y.Offset)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        isDragging = false
+    end
+end)
+
+destroyButton.MouseButton1Click:Connect(function()
+    mainFrame:Remove()
+end)
+
+mainButton.MouseButton1Click:Connect(function()
+    isAutoParryEnabled = not isAutoParryEnabled
+    mainButton.Text = isAutoParryEnabled and "Close AutoParry: ON" or "Close AutoParry: OFF"
+    mainButton.BackgroundColor3 = isAutoParryEnabled and Color3.new(0.2, 0.8, 0.2) or Color3.new(0.8, 0.2, 0.2)
+end)
